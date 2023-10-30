@@ -26,6 +26,9 @@ class Axis:
     HallPin: int
     ReferenceOffset: float
 
+    TotalSteps: int
+    MaxDPhiDt: float
+
     IsInit: bool
     Position: int
     LastStepTime: int
@@ -36,7 +39,7 @@ class Axis:
 
 class RotationTable():
 
-    def __init__(self, COMPORT: str, timeout: float = 10, verbose: bool = False):
+    def __init__(self, COMPORT: str, timeout: float = 5, verbose: bool = False):
         self.com = COMPORT
         self.timeout = timeout
         self.verbose = verbose
