@@ -99,6 +99,11 @@ class RotationTable():
         self.__sendLine(f"status {ax.value}")
         return Axis(**json.loads(self.__receiveLine()))
 
+    def readHall(self, ax: AxisName, Nmean: int = 100):
+        self.__sendLine(f"readhall {ax.value} {Nmean}")
+
+        return float(self.__receiveLine())
+
     def steps(self, ax: AxisName, Nsteps: int, isReverse: bool = False, isBlocking=True):
 
         if Nsteps < 0:
@@ -117,4 +122,5 @@ class RotationTable():
         self.__sendLine(f"reference {ax.value}")
         while True:
             if CMD_OK in self.__receiveLine():
-                return
+                return True
+        return False
