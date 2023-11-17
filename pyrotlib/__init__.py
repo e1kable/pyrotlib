@@ -6,7 +6,7 @@ import json
 import time
 
 BAUDRATE = 115200
-
+N_STEPS_REVERSE = -35
 CMD_OK = "OK"
 
 
@@ -58,6 +58,10 @@ class RotationTable():
         raise TimeoutError()
 
     def __exit__(self, type, value, traceback):
+
+        if self.verbose:
+            print("connection closed")
+
         self.conn.close()
 
         return True
@@ -114,13 +118,33 @@ class RotationTable():
 
         if isBlocking:
             while True:
-                if CMD_OK in self.__receiveLine():
+                if CMD_OK in self.__receiveLine(isTimeout=False):
                     return
 
-    def referenceAxis(self, ax: AxisName):
+    def referenceAxis(self, ax: AxisName, isReverseBeforehand: bool = True, sTimeout: int = 120):
+        if isReverseBeforehand:
+            self.steps(ax, N_STEPS_REVERSE)
 
         self.__sendLine(f"reference {ax.value}")
+
+        if sTimeout > 0:
+
+            start = time.time()
+            while (time.time()-start < sTimeout):
+                if CMD_OK in self.__receiveLine():
+                    return True
+            return False
+
         while True:
             if CMD_OK in self.__receiveLine():
                 return True
-        return False
+
+    def moveTo(self, ax: AxisName, position: int):
+
+        stat = self.getAxisStatus(ax)
+
+        currentPos = stat.Position
+
+        if self.verbose:
+            print(f"current pos {currentPos}, desired position: {position}")
+        self.steps(ax, int(position-currentPos))
