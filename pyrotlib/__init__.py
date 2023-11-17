@@ -48,6 +48,8 @@ class RotationTable():
 
         self.conn = serial.Serial(self.com, BAUDRATE, timeout=self.timeout)
 
+        self.__sendLine(f"test")
+
         start = time.time()
         while (time.time()-start < self.timeout):
             buf = self.__receiveLine()
