@@ -1,9 +1,10 @@
-
+import math
 import serial
 import dataclasses
 import enum
 import json
 import time
+import traceback
 
 BAUDRATE = 115200
 REVERSE_ANGLE_DEG = -15
@@ -59,11 +60,13 @@ class RotationTable():
 
         raise TimeoutError()
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, tp, value, tb):
 
         if self.verbose:
             print("connection closed")
 
+        if tp is not None:
+            print(traceback.format_exc())
         self.conn.close()
 
         return True
@@ -145,12 +148,47 @@ class RotationTable():
             if CMD_OK in self.__receiveLine():
                 return True
 
-    def moveTo(self, ax: AxisName, position: int):
+    def moveTo(self, ax: AxisName, position: int, currentPos: int = None):
 
-        stat = self.getAxisStatus(ax)
+        if currentPos is None:
+            stat = self.getAxisStatus(ax)
 
-        currentPos = stat.Position
+            currentPos = stat.Position
 
         if self.verbose:
             print(f"current pos {currentPos}, desired position: {position}")
+
+        if position-currentPos == 0:
+            return
         self.steps(ax, int(position-currentPos))
+
+    def moveToAngle(self, ax: AxisName, angle: float):
+        """
+        Moves to a given angular position. Makes sure that there is no revolution
+        over the reference position.
+
+        Parameters
+        ----------
+        ax : AxisName
+            The desired Axis.
+        angle : float
+            The desired angle. In rad.
+        """
+        axDat = self.getAxisStatus(ax)
+
+        angleN = angle % (2*math.pi)
+
+        if angleN <= math.pi:
+            stepDiff = angleN / (2*math.pi) * axDat.TotalSteps
+            pos = axDat.ReferencePosition + stepDiff
+
+        else:
+            stepDiff = (2*math.pi-angleN) / (2*math.pi) * axDat.TotalSteps
+            pos = axDat.ReferencePosition - stepDiff
+
+        if self.verbose:
+            print(
+                f"Current pos {axDat.Position} Desired position: {pos}",
+                f"RefPos: {axDat.ReferencePosition} StepDiff: {stepDiff}")
+
+        self.moveTo(ax, pos)
