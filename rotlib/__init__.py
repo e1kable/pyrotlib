@@ -6,7 +6,7 @@ import json
 import time
 
 BAUDRATE = 115200
-N_STEPS_REVERSE = -35
+REVERSE_ANGLE_DEG = -15
 CMD_OK = "OK"
 
 
@@ -123,9 +123,13 @@ class RotationTable():
                 if CMD_OK in self.__receiveLine(isTimeout=False):
                     return
 
-    def referenceAxis(self, ax: AxisName, isReverseBeforehand: bool = True, sTimeout: int = 120):
+    def referenceAxis(self, ax: AxisName, isReverseBeforehand: bool = False, sTimeout: int = 120):
         if isReverseBeforehand:
-            self.steps(ax, N_STEPS_REVERSE)
+            axisDat = self.getAxisStatus(ax)
+
+            stepsRev = int(REVERSE_ANGLE_DEG/360.0*axisDat.TotalSteps)
+
+            self.steps(ax, stepsRev)
 
         self.__sendLine(f"reference {ax.value}")
 
